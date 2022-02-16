@@ -182,7 +182,7 @@ class MockState:
         # but we use the same env, so that link references, etc
         # are added to the global parse.
         nested_renderer = self._renderer.__class__(self._renderer.md)
-        options = {k: v for k, v in self._renderer.config.items()}
+        options = dict(self._renderer.config.items())
         options.update(
             {
                 "document": self.document,
@@ -206,7 +206,6 @@ class MockState:
 
            -- Buckaroo Banzai
         """
-        elements = []
         # split attribution
         last_line_blank = False
         blockquote_lines = lines
@@ -236,7 +235,7 @@ class MockState:
         # parse block
         blockquote = nodes.block_quote()
         self.nested_parse(blockquote_lines, line_offset, blockquote)
-        elements.append(blockquote)
+        elements = [blockquote]
         # parse attribution
         if attribution_lines:
             attribution_text = "\n".join(attribution_lines)

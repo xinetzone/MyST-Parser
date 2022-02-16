@@ -34,7 +34,7 @@ def test_html_round_trip(line, title, text, expected):
     try:
         assert str(ast).rstrip() == expected.rstrip()
     except AssertionError:
-        print(str(ast))
+        print(ast)
         raise
 
 

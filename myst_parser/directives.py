@@ -74,7 +74,7 @@ class FigureMarkdown(SphinxDirective):
         finally:
             self.state._renderer.config["myst_extensions"] = myst_extensions
 
-        if not len(node.children) == 2:
+        if len(node.children) != 2:
             return [
                 self.figure_error(
                     "content should be one image, "
@@ -123,9 +123,8 @@ class FigureMarkdown(SphinxDirective):
 
     def figure_error(self, message):
         """A warning for reporting an invalid figure."""
-        error = self.state_machine.reporter.error(
+        return self.state_machine.reporter.error(
             message,
             nodes.literal_block(self.block_text, self.block_text),
             line=self.lineno,
         )
-        return error

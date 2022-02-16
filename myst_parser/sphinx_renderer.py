@@ -75,8 +75,7 @@ class SphinxRenderer(DocutilsRenderer):
             refwarn=True,
         )
         self.add_line_and_source_path(wrap_node, token)
-        title = token.attrGet("title")
-        if title:
+        if title := token.attrGet("title"):
             wrap_node["title"] = title
         self.current_node.append(wrap_node)
 
@@ -98,7 +97,7 @@ class SphinxRenderer(DocutilsRenderer):
             return
 
         section = self.current_node
-        doc_slug = self.doc_env.doc2path(self.doc_env.docname, base=False) + "#" + slug
+        doc_slug = f'{self.doc_env.doc2path(self.doc_env.docname, base=False)}#{slug}'
 
         # save the reference in the standard domain, so that it can be handled properly
         domain = cast(StandardDomain, self.doc_env.get_domain("std"))

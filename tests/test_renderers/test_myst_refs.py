@@ -41,6 +41,6 @@ def test_parse(test_name, text, should_warn, file_regression):
 
     content = document.pformat()
     # windows fix
-    content = content.replace("root" + os.sep + "index.md", "root/index.md")
+    content = content.replace(f'root{os.sep}index.md', "root/index.md")
 
     file_regression.check(content, basename=test_name, extension=".xml")

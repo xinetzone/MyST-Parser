@@ -71,7 +71,7 @@ def parse(app: Sphinx, text: str, docname: str = "index") -> nodes.document:
     with sphinx_domains(app.env):
         return publish_doctree(
             text,
-            path.join(app.srcdir, docname + ".md"),
+            path.join(app.srcdir, f'{docname}.md'),
             reader=reader,
             parser=parser,
             parser_name="markdown",

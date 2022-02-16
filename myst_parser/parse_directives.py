@@ -106,8 +106,7 @@ def parse_directive_options(
     options: Dict[str, Any] = {}
     if content.startswith("---"):
         content = "\n".join(content.splitlines()[1:])
-        match = re.search(r"^-{3,}", content, re.MULTILINE)
-        if match:
+        if match := re.search(r"^-{3,}", content, re.MULTILINE):
             yaml_block = content[: match.start()]
             content = content[match.end() + 1 :]  # TODO advance line number
         else:

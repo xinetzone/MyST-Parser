@@ -338,16 +338,12 @@ class DocutilsRenderer(RendererProtocol):
         Don't try to use it! Spec requires to show `alt` content with stripped markup,
         instead of simple escaping.
         """
-        result = ""
-
-        for token in tokens or []:
-            if token.type == "text":
-                result += token.content
-            # elif token.type == "image":
-            #     result += self.renderInlineAsText(token.children)
-            else:
-                result += self.renderInlineAsText(token.children or [])
-        return result
+        return "".join(
+            token.content
+            if token.type == "text"
+            else self.renderInlineAsText(token.children or [])
+            for token in tokens or []
+        )
 
     # ### render methods for commonmark tokens
 
@@ -442,33 +438,29 @@ class DocutilsRenderer(RendererProtocol):
         info = token.info.strip() if token.info else token.info
         language = info.split()[0] if info else ""
 
-        if not self.config.get("commonmark_only", False) and language == "{eval-rst}":
-            # copy necessary elements (source, line no, env, reporter)
-            newdoc = make_document()
-            newdoc["source"] = self.document["source"]
-            newdoc.settings = self.document.settings
-            newdoc.reporter = self.reporter
-            # pad the line numbers artificially so they offset with the fence block
-            pseudosource = ("\n" * token_line(token)) + token.content
-            # actually parse the rst into our document
-            MockRSTParser().parse(pseudosource, newdoc)
-            for node in newdoc:
-                if node["names"]:
-                    self.document.note_explicit_target(node, node)
-            self.current_node.extend(newdoc[:])
-            return
-        elif (
-            not self.config.get("commonmark_only", False)
-            and language.startswith("{")
-            and language.endswith("}")
-        ):
-            return self.render_directive(token)
+        if not self.config.get("commonmark_only", False):
+            if language == "{eval-rst}":
+                # copy necessary elements (source, line no, env, reporter)
+                newdoc = make_document()
+                newdoc["source"] = self.document["source"]
+                newdoc.settings = self.document.settings
+                newdoc.reporter = self.reporter
+                # pad the line numbers artificially so they offset with the fence block
+                pseudosource = ("\n" * token_line(token)) + token.content
+                # actually parse the rst into our document
+                MockRSTParser().parse(pseudosource, newdoc)
+                for node in newdoc:
+                    if node["names"]:
+                        self.document.note_explicit_target(node, node)
+                self.current_node.extend(newdoc[:])
+                return
+            elif language.startswith("{") and language.endswith("}"):
+                return self.render_directive(token)
 
-        if not language:
-            if self.sphinx_env is not None:
-                language = self.sphinx_env.temp_data.get(
-                    "highlight_language", self.sphinx_env.config.highlight_language
-                )
+        if not language and self.sphinx_env is not None:
+            language = self.sphinx_env.temp_data.get(
+                "highlight_language", self.sphinx_env.config.highlight_language
+            )
 
         if not language:
             language = self.config.get("highlight_language", "")
@@ -497,9 +489,10 @@ class DocutilsRenderer(RendererProtocol):
 
         # Test if we're replacing a section level first
         level = int(token.tag[1])
-        if isinstance(self.current_node, nodes.section):
-            if self.is_section_level(level, self.current_node):
-                self.current_node = cast(nodes.Element, self.current_node.parent)
+        if isinstance(self.current_node, nodes.section) and self.is_section_level(
+            level, self.current_node
+        ):
+            self.current_node = cast(nodes.Element, self.current_node.parent)
 
         title_node = nodes.title(token.children[0].content if token.children else "")
         self.add_line_and_source_path(title_node, token)
@@ -544,8 +537,7 @@ class DocutilsRenderer(RendererProtocol):
 
         ref_node["refuri"] = destination
 
-        title = token.attrGet("title")
-        if title:
+        if title := token.attrGet("title"):
             ref_node["title"] = title
         next_node = ref_node
 
@@ -604,8 +596,7 @@ class DocutilsRenderer(RendererProtocol):
         img_node["uri"] = destination
 
         img_node["alt"] = self.renderInlineAsText(token.children or [])
-        title = token.attrGet("title")
-        if title:
+        if title := token.attrGet("title"):
             img_node["title"] = token.attrGet("title")
         self.current_node.append(img_node)
 
@@ -956,7 +947,7 @@ class DocutilsRenderer(RendererProtocol):
             children = (token.children or [])[:]
             while children:
                 child = children.pop(0)
-                if not child.type == "fieldlist_name":
+                if child.type != "fieldlist_name":
                     error_msg = self.reporter.error(
                         (
                             "Expected a fieldlist_name as a child of a field_list"
@@ -1154,8 +1145,7 @@ class DocutilsRenderer(RendererProtocol):
             n.name for n in ast.find_all(jinja2.nodes.Name) if n.name != "env"
         }
         self.document.sub_references = getattr(self.document, "sub_references", set())
-        cyclic = references.intersection(self.document.sub_references)
-        if cyclic:
+        if cyclic := references.intersection(self.document.sub_references):
             error_msg = self.reporter.error(
                 f"circular substitution reference: {cyclic}",
                 line=position,

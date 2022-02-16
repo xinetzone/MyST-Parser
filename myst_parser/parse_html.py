@@ -94,8 +94,7 @@ class Element(abc.MutableSequence):
         return self._children.__len__()
 
     def __iter__(self) -> Iterator["Element"]:
-        for child in self._children:
-            yield child
+        yield from self._children
 
     def insert(self, index: int, item: "Element"):
         assert isinstance(item, Element)
@@ -144,16 +143,13 @@ class Element(abc.MutableSequence):
             yield self
         for child in self:
             yield child
-            for ancestor in child.walk():
-                yield ancestor
+            yield from child.walk()
 
     def strip(self, inplace: bool = False, recurse: bool = False) -> "Element":
         """Return copy with all `Data` tokens
         that only contain whitespace / newlines removed.
         """
-        element = self
-        if not inplace:
-            element = self.deepcopy()
+        element = self.deepcopy() if not inplace else self
         element.reset_children(
             [
                 e
@@ -249,13 +245,12 @@ class TerminalElement(Element):
     def __repr__(self) -> str:
         text = self.data
         if len(text) > 20:
-            text = text[:17] + "..."
+            text = f'{text[:17]}...'
         return f"{self.__class__.__name__}({text!r})"
 
     def deepcopy(self) -> "TerminalElement":
         """Copy and remove parent."""
-        _copy = self.__class__(self.data)
-        return _copy
+        return self.__class__(self.data)
 
 
 class Data(TerminalElement):
@@ -354,14 +349,14 @@ class Tree(object):
         """
         count = 0
         for ind in reversed(self.stack):
-            count = count + 1
+            count += 1
             if ind.name == name:
                 break
         else:
             count = 0
 
         # It pops all the items which do not match with the closing tag.
-        for _ in range(0, count):
+        for _ in range(count):
             self.stack.pop()
 
 
